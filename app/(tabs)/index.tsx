@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AppState,
+  type AppStateStatus,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AgentConnection } from '@/services/websocket';
 import { getLocationString } from '@/services/location';
 import { getUpcomingEventsString } from '@/services/calendar';
+import { showLocalNotification } from '@/services/notifications';
 import { useChatStore } from '@/store/chat';
 import { useSettingsStore } from '@/store/settings';
 import { MessageBubble } from '@/components/MessageBubble';
@@ -25,12 +28,22 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const connRef = useRef<AgentConnection | null>(null);
   const listRef = useRef<FlatList>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  const { messages, connected, connecting, addMessage, setConnected, setConnecting, clearMessages } =
+  const { messages, connected, connecting, addMessage, setConnected, setConnecting } =
     useChatStore();
   const { agents, attachLocation, attachCalendar } = useSettingsStore();
 
   const activeAgent = agents.find((a) => a.active) ?? agents[0];
+
+  // Track foreground/background state so we can decide whether
+  // to show a notification or render directly in the chat list.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      appStateRef.current = next;
+    });
+    return () => sub.remove();
+  }, []);
 
   // Connect / reconnect when active agent changes
   useEffect(() => {
@@ -56,7 +69,16 @@ export default function ChatScreen() {
     };
 
     conn.onMessage = (msg) => {
-      if (msg.type === 'message' || msg.type === 'notification') {
+      if (msg.type !== 'message' && msg.type !== 'notification') return;
+
+      const isBackground =
+        appStateRef.current === 'background' || appStateRef.current === 'inactive';
+
+      if (isBackground) {
+        // App is not visible — fire a local push notification
+        showLocalNotification(activeAgent.name, msg.content);
+      } else {
+        // App is in foreground — render in chat
         addMessage({ role: 'agent', content: msg.content, agentId: activeAgent.id });
       }
     };
@@ -122,6 +144,16 @@ export default function ChatScreen() {
           contentContainerStyle={styles.listContent}
           style={styles.flex}
         />
+
+        {/* No agent configured yet */}
+        {!activeAgent && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No agent connected</Text>
+            <Text style={styles.emptyText}>
+              Go to the Agents tab to add your PicoClaw connection.
+            </Text>
+          </View>
+        )}
 
         {/* Input bar */}
         <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -193,4 +225,7 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: { backgroundColor: '#334155' },
   sendIcon: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  emptyState: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#475569', marginBottom: 8 },
+  emptyText: { fontSize: 14, color: '#334155', textAlign: 'center', lineHeight: 20 },
 });
