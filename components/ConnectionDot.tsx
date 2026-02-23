@@ -4,11 +4,28 @@ import { StyleSheet, Text, View } from 'react-native';
 interface Props {
   connected: boolean;
   connecting?: boolean;
+  latency?: number | null;
 }
 
-export function ConnectionDot({ connected, connecting }: Props) {
-  const color = connected ? '#22c55e' : connecting ? '#f59e0b' : '#ef4444';
-  const label = connected ? 'Online' : connecting ? 'Connecting…' : 'Offline';
+export function ConnectionDot({ connected, connecting, latency }: Props) {
+  let color = '#ef4444'; // Red (Offline)
+  let label = 'Offline';
+
+  if (connecting) {
+    color = '#f59e0b'; // Yellow
+    label = 'Connecting…';
+  } else if (connected) {
+    if (latency && latency > 1000) {
+      color = '#f59e0b'; // Yellow (Poor)
+      label = 'Weak Signal';
+    } else if (latency && latency > 300) {
+      color = '#eab308'; // Darker Yellow (Fair)
+      label = 'Fair';
+    } else {
+      color = '#22c55e'; // Green (Good)
+      label = 'Online';
+    }
+  }
 
   return (
     <View style={styles.row}>

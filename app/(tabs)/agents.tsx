@@ -10,79 +10,105 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Pencil } from 'lucide-react-native';
 import { useSettingsStore, type AgentProfile } from '@/store/settings';
+import { useChatStore } from '@/store/chat';
 
 let _idN = Date.now();
 
+type FormState = { name: string; url: string; clientId: string; token: string };
+const BLANK: FormState = { name: '', url: 'ws://localhost:8787/ws', clientId: '', token: '' };
+
 export default function AgentsScreen() {
-  const { agents, addAgent, removeAgent, setActiveAgent } = useSettingsStore();
-  const [showForm, setShowForm] = useState(false);
+  const { agents, addAgent, updateAgent, removeAgent, toggleAgent } = useSettingsStore();
+  const { agentConnected, agentLatency } = useChatStore();
+  // null = hidden, 'add' = new agent form, agent.id = edit that agent
+  const [editing, setEditing] = useState<null | 'add' | string>(null);
+  const [form, setForm] = useState<FormState>(BLANK);
 
-  const [form, setForm] = useState({
-    name: '',
-    url: 'ws://192.168.1.10:18792/ws',
-    clientId: '',
-    token: '',
-  });
+  function openAdd() {
+    setForm(BLANK);
+    setEditing('add');
+  }
 
-  function handleAdd() {
+  function openEdit(agent: AgentProfile) {
+    setForm({ name: agent.name, url: agent.url, clientId: agent.clientId, token: agent.token });
+    setEditing(agent.id);
+  }
+
+  function handleClose() {
+    setEditing(null);
+    setForm(BLANK);
+  }
+
+  function handleSave() {
     if (!form.name || !form.url || !form.clientId) {
       Alert.alert('Missing fields', 'Name, URL and Client ID are required.');
       return;
     }
-    const agent: AgentProfile = {
-      id: String(++_idN),
-      name: form.name,
-      url: form.url,
-      clientId: form.clientId,
-      token: form.token,
-      active: agents.length === 0,
-    };
-    addAgent(agent);
-    setForm({ name: '', url: 'ws://192.168.1.10:18792/ws', clientId: '', token: '' });
-    setShowForm(false);
+    if (editing === 'add') {
+      const agent: AgentProfile = {
+        id: String(++_idN),
+        name: form.name,
+        url: form.url,
+        clientId: form.clientId,
+        token: form.token,
+        active: agents.length === 0,
+      };
+      addAgent(agent);
+    } else if (editing) {
+      updateAgent(editing, { name: form.name, url: form.url, clientId: form.clientId, token: form.token });
+    }
+    handleClose();
   }
 
   function handleDelete(id: string) {
     Alert.alert('Remove agent', 'Remove this connection?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeAgent(id) },
+      { text: 'Remove', style: 'destructive', onPress: () => { removeAgent(id); if (editing === id) handleClose(); } },
     ]);
   }
+
+  const isFormOpen = editing !== null;
+  const formTitle = editing === 'add' ? 'New Agent' : 'Edit Agent';
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>Agents</Text>
-        <Pressable style={styles.addBtn} onPress={() => setShowForm((v) => !v)}>
-          <Text style={styles.addBtnText}>{showForm ? '✕' : '+ Add'}</Text>
+        <Pressable style={styles.addBtn} onPress={isFormOpen ? handleClose : openAdd}>
+          <Text style={styles.addBtnText}>{isFormOpen ? '✕ Cancel' : '+ Add'}</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {showForm && (
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {isFormOpen && (
           <View style={styles.form}>
-            <Text style={styles.formTitle}>New Agent Connection</Text>
+            <Text style={styles.formTitle}>{formTitle}</Text>
             <Field label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="My ClawMobile" />
-            <Field label="WebSocket URL" value={form.url} onChange={(v) => setForm((f) => ({ ...f, url: v }))} placeholder="ws://host:18792/ws" autoCapitalize="none" />
+            <Field label="WebSocket URL" value={form.url} onChange={(v) => setForm((f) => ({ ...f, url: v }))} placeholder="ws://host:8787/ws" autoCapitalize="none" />
             <Field label="Client ID" value={form.clientId} onChange={(v) => setForm((f) => ({ ...f, clientId: v }))} placeholder="alice" autoCapitalize="none" />
-            <Field label="Token (optional)" value={form.token} onChange={(v) => setForm((f) => ({ ...f, token: v }))} placeholder="" autoCapitalize="none" secureTextEntry />
-            <Pressable style={styles.saveBtn} onPress={handleAdd}>
+            <Field label="Token (optional)" value={form.token} onChange={(v) => setForm((f) => ({ ...f, token: v }))} autoCapitalize="none" secureTextEntry />
+            <Pressable style={styles.saveBtn} onPress={handleSave}>
               <Text style={styles.saveBtnText}>Save</Text>
             </Pressable>
           </View>
         )}
 
-        {agents.length === 0 && !showForm && (
-          <Text style={styles.empty}>No agents configured yet. Tap "+ Add" to connect to a ClawMobile instance.</Text>
+        {agents.length === 0 && !isFormOpen && (
+          <Text style={styles.empty}>No agents configured yet. Tap "+ Add" to connect to your Cognis server.</Text>
         )}
 
         {agents.map((agent) => (
           <AgentCard
             key={agent.id}
             agent={agent}
-            onActivate={() => setActiveAgent(agent.id)}
+            isEditing={editing === agent.id}
+            onEdit={() => openEdit(agent)}
+            onToggle={(val) => toggleAgent(agent.id, val)}
             onDelete={() => handleDelete(agent.id)}
+            connected={agentConnected[agent.id] ?? false}
+            latencyMs={agentLatency[agent.id]}
           />
         ))}
       </ScrollView>
@@ -92,27 +118,57 @@ export default function AgentsScreen() {
 
 function AgentCard({
   agent,
-  onActivate,
+  isEditing,
+  onEdit,
+  onToggle,
   onDelete,
+  connected,
+  latencyMs,
 }: {
   agent: AgentProfile;
-  onActivate: () => void;
+  isEditing: boolean;
+  onEdit: () => void;
+  onToggle: (val: boolean) => void;
   onDelete: () => void;
+  connected: boolean;
+  latencyMs?: number;
 }) {
+  const statusLabel = connected
+    ? `Connected${typeof latencyMs === 'number' && latencyMs > 0 ? ` · ${Math.round(latencyMs)} ms` : ''}`
+    : 'Disconnected';
+
   return (
-    <View style={[styles.card, agent.active && styles.cardActive]}>
+    <Pressable
+      onPress={onEdit}
+      style={({ pressed }) => [
+        styles.card,
+        agent.active && styles.cardActive,
+        isEditing && styles.cardEditing,
+        pressed && styles.cardPressed,
+      ]}
+    >
       <View style={styles.cardBody}>
         <Text style={styles.cardName}>{agent.name}</Text>
         <Text style={styles.cardUrl} numberOfLines={1}>{agent.url}</Text>
         <Text style={styles.cardMeta}>client_id: {agent.clientId}</Text>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusDot, connected ? styles.statusOnline : styles.statusOffline]} />
+          <Text style={styles.statusText}>{statusLabel}</Text>
+        </View>
       </View>
       <View style={styles.cardActions}>
-        <Switch value={agent.active} onValueChange={onActivate} trackColor={{ true: '#6366f1' }} />
-        <Pressable onPress={onDelete} style={styles.deleteBtn}>
+        {/* Pencil icon shows edit affordance */}
+        <Pencil color="#64748b" size={14} strokeWidth={2} style={{ marginRight: 4 }} />
+        <Switch
+          value={agent.active}
+          onValueChange={onToggle}
+          trackColor={{ true: '#6366f1', false: '#334155' }}
+        />
+        <Pressable onPress={onDelete} style={styles.deleteBtn} hitSlop={8}>
           <Text style={styles.deleteBtnText}>✕</Text>
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -142,6 +198,7 @@ function Field({
         placeholderTextColor="#475569"
         autoCapitalize={autoCapitalize ?? 'sentences'}
         secureTextEntry={secureTextEntry}
+        autoCorrect={false}
       />
     </View>
   );
@@ -164,10 +221,17 @@ const styles = StyleSheet.create({
   empty: { color: '#475569', textAlign: 'center', marginTop: 40, lineHeight: 22 },
   card: { backgroundColor: '#1e293b', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   cardActive: { borderColor: '#6366f1' },
+  cardEditing: { borderColor: '#a5b4fc', backgroundColor: '#1e2a40' },
+  cardPressed: { opacity: 0.8 },
   cardBody: { flex: 1, gap: 2 },
   cardName: { fontSize: 15, fontWeight: '700', color: '#f1f5f9' },
   cardUrl: { fontSize: 12, color: '#64748b' },
   cardMeta: { fontSize: 12, color: '#475569' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  statusDot: { width: 7, height: 7, borderRadius: 3.5 },
+  statusOnline: { backgroundColor: '#22c55e' },
+  statusOffline: { backgroundColor: '#ef4444' },
+  statusText: { fontSize: 12, color: '#94a3b8' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   deleteBtn: { padding: 6 },
   deleteBtnText: { color: '#ef4444', fontSize: 16 },

@@ -18,7 +18,7 @@ interface SettingsState {
   addAgent: (agent: AgentProfile) => void;
   updateAgent: (id: string, patch: Partial<AgentProfile>) => void;
   removeAgent: (id: string) => void;
-  setActiveAgent: (id: string) => void;
+  toggleAgent: (id: string, active: boolean) => void;
   toggleAttachLocation: () => void;
   toggleAttachCalendar: () => void;
   hydrate: () => Promise<void>;
@@ -47,9 +47,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     persist(get());
   },
 
-  setActiveAgent: (id) => {
+  toggleAgent: (id, active) => {
     set((s) => ({
-      agents: s.agents.map((a) => ({ ...a, active: a.id === id })),
+      agents: s.agents.map((a) => (a.id === id ? { ...a, active } : a)),
     }));
     persist(get());
   },
@@ -80,6 +80,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 }));
 
 function persist(state: SettingsState) {
-  const { hydrated, hydrate, addAgent, updateAgent, removeAgent, setActiveAgent, toggleAttachLocation, toggleAttachCalendar, ...data } = state;
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data)).catch(() => {});
+  const { hydrated, hydrate, addAgent, updateAgent, removeAgent, toggleAgent, toggleAttachLocation, toggleAttachCalendar, ...data } = state;
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data)).catch(() => { });
 }

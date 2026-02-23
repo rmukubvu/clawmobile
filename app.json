@@ -33,7 +33,11 @@
         "ACCESS_COARSE_LOCATION",
         "READ_CALENDAR",
         "RECORD_AUDIO",
-        "CAMERA"
+        "CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "edgeToEdgeEnabled": true
     },
@@ -53,6 +57,12 @@
           "color": "#6366f1"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cb95b95b-ca4c-4732-93f6-830c25fccc6f"
+      }
+    }
   }
 }

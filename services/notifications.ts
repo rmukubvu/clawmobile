@@ -26,13 +26,17 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 /** Show a local notification immediately — used when the app is backgrounded. */
-export async function showLocalNotification(agentName: string, content: string) {
+export async function showLocalNotification(
+  agentName: string,
+  content: string,
+  agentId?: string,
+) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: agentName,
-      body: content.length > 200 ? content.slice(0, 197) + '…' : content,
+      body: content.length > 200 ? content.slice(0, 197) + '\u2026' : content,
       sound: true,
-      data: { screen: 'chat' },
+      data: { screen: 'chat', agentId: agentId ?? null },
     },
     trigger: null, // fire immediately
   });
@@ -41,12 +45,15 @@ export async function showLocalNotification(agentName: string, content: string) 
 /**
  * Call once at app startup. Returns a cleanup function.
  * When the user taps a notification, `onTap` is called with the screen name
- * stored in the notification data (e.g. 'chat').
+ * and the full notification data object.
  */
-export function setupNotificationListeners(onTap: (screen: string) => void) {
+export function setupNotificationListeners(
+  onTap: (screen: string, data: Record<string, unknown>) => void,
+) {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const screen = response.notification.request.content.data?.screen as string | undefined;
-    onTap(screen ?? 'chat');
+    const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
+    const screen = (data.screen as string | undefined) ?? 'chat';
+    onTap(screen, data);
   });
 
   return () => sub.remove();

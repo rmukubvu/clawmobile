@@ -1,231 +1,174 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  AppState,
-  type AppStateStatus,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { AgentConnection } from '@/services/websocket';
-import { getLocationString } from '@/services/location';
-import { getUpcomingEventsString } from '@/services/calendar';
-import { showLocalNotification } from '@/services/notifications';
-import { useChatStore } from '@/store/chat';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSettingsStore } from '@/store/settings';
-import { MessageBubble } from '@/components/MessageBubble';
-import { ConnectionDot } from '@/components/ConnectionDot';
+import { MessageStorageService as StorageService } from '@/services/MessageStorageService';
 
-export default function ChatScreen() {
-  const insets = useSafeAreaInsets();
-  const [input, setInput] = useState('');
-  const connRef = useRef<AgentConnection | null>(null);
-  const listRef = useRef<FlatList>(null);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+interface AgentPreview {
+  id: string;
+  name: string;
+  lastMessage?: string;
+  timestamp?: number;
+}
 
-  const { messages, connected, connecting, addMessage, setConnected, setConnecting } =
-    useChatStore();
-  const { agents, attachLocation, attachCalendar } = useSettingsStore();
+const stripSystemPrefix = (text?: string) => {
+  if (!text) return text;
+  return text.replace(/^\[[^\]]+\]\s*/u, '').trim();
+};
 
-  const activeAgent = agents.find((a) => a.active) ?? agents[0];
+export default function ChatListScreen() {
+  const router = useRouter();
+  const { agents } = useSettingsStore();
+  const [previews, setPreviews] = useState<AgentPreview[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Track foreground/background state so we can decide whether
-  // to show a notification or render directly in the chat list.
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
-      appStateRef.current = next;
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Connect / reconnect when active agent changes
-  useEffect(() => {
-    if (!activeAgent) return;
-
-    connRef.current?.disconnect();
-    setConnecting(true);
-
-    addMessage({ role: 'system', content: `Connecting to ${activeAgent.name}…` });
-
-    const conn = new AgentConnection({
-      url: activeAgent.url,
-      clientId: activeAgent.clientId,
-      token: activeAgent.token || undefined,
-    });
-
-    conn.onStatusChange = (isConnected) => {
-      setConnected(isConnected);
-      addMessage({
-        role: 'system',
-        content: isConnected ? `Connected to ${activeAgent.name}` : `Disconnected — retrying…`,
+  const loadPreviews = useCallback(async () => {
+    const data: AgentPreview[] = [];
+    for (const agent of agents) {
+      const lastMsg = await StorageService.getLastMessage(agent.id);
+      data.push({
+        id: agent.id,
+        name: agent.name,
+        lastMessage: stripSystemPrefix(lastMsg?.content),
+        timestamp: lastMsg?.timestamp,
       });
-    };
-
-    conn.onMessage = (msg) => {
-      if (msg.type !== 'message' && msg.type !== 'notification') return;
-
-      const isBackground =
-        appStateRef.current === 'background' || appStateRef.current === 'inactive';
-
-      if (isBackground) {
-        // App is not visible — fire a local push notification
-        showLocalNotification(activeAgent.name, msg.content);
-      } else {
-        // App is in foreground — render in chat
-        addMessage({ role: 'agent', content: msg.content, agentId: activeAgent.id });
-      }
-    };
-
-    connRef.current = conn;
-    conn.connect();
-
-    return () => {
-      conn.disconnect();
-      connRef.current = null;
-    };
-  }, [activeAgent?.id]);
-
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || !connRef.current?.connected) return;
-
-    setInput('');
-    addMessage({ role: 'user', content: text });
-
-    const metadata: Record<string, string> = {};
-
-    if (attachLocation) {
-      const loc = await getLocationString();
-      if (loc) metadata.location = loc;
     }
 
-    if (attachCalendar) {
-      const cal = await getUpcomingEventsString(1);
-      if (cal) metadata.calendar = cal;
-    }
+    data.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
+    setPreviews(data);
+  }, [agents]);
 
-    connRef.current.sendMessage(text, Object.keys(metadata).length ? metadata : undefined);
-  }, [input, attachLocation, attachCalendar]);
+  useFocusEffect(
+    useCallback(() => {
+      loadPreviews();
+    }, [loadPreviews]),
+  );
 
-  useEffect(() => {
-    if (messages.length) {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
-    }
-  }, [messages.length]);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadPreviews();
+    setRefreshing(false);
+  };
+
+  const renderItem = ({ item }: { item: AgentPreview }) => (
+    <Pressable
+      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+      onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
+    >
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{item.name[0].toUpperCase()}</Text>
+      </View>
+      <View style={styles.content}>
+        <View style={styles.row}>
+          <Text style={styles.name}>{item.name}</Text>
+          {item.timestamp && (
+            <Text style={styles.time}>
+              {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          )}
+        </View>
+        <Text style={styles.preview} numberOfLines={1}>
+          {item.lastMessage ?? 'Start a conversation'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+
+  const EmptyState = (
+    <View style={styles.empty}>
+      <Text style={styles.emptyTitle}>No chats yet</Text>
+      <Text style={styles.emptySub}>Connect an agent first, then send your first message.</Text>
+      <View style={styles.emptyActions}>
+        <Pressable style={styles.primaryBtn} onPress={() => router.push('/agents')}>
+          <Text style={styles.primaryBtnText}>Open Agents</Text>
+        </Pressable>
+        <Pressable style={styles.secondaryBtn} onPress={onRefresh}>
+          <Text style={styles.secondaryBtnText}>Refresh</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>{activeAgent?.name ?? 'ClawMobile'}</Text>
-          <ConnectionDot connected={connected} connecting={connecting} />
-        </View>
+        <Text style={styles.title}>Chats</Text>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
-        {/* Message list */}
+      {agents.length === 0 ? (
+        EmptyState
+      ) : (
         <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(m) => m.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
-          contentContainerStyle={styles.listContent}
-          style={styles.flex}
+          data={previews}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={[styles.list, previews.length === 0 && styles.listEmpty]}
+          ListEmptyComponent={EmptyState}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+          }
         />
-
-        {/* No agent configured yet */}
-        {!activeAgent && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No agent connected</Text>
-            <Text style={styles.emptyText}>
-              Go to the Agents tab to add your ClawMobile connection.
-            </Text>
-          </View>
-        )}
-
-        {/* Input bar */}
-        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Message…"
-            placeholderTextColor="#475569"
-            multiline
-            returnKeyType="send"
-            onSubmitEditing={send}
-            blurOnSubmit={false}
-          />
-          <Pressable
-            style={[styles.sendBtn, (!input.trim() || !connected) && styles.sendBtnDisabled]}
-            onPress={send}
-            disabled={!input.trim() || !connected}
-          >
-            <Text style={styles.sendIcon}>↑</Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0f172a' },
-  flex: { flex: 1 },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#1e293b',
+  },
+  title: { fontSize: 28, fontWeight: '700', color: '#f1f5f9' },
+  list: { paddingBottom: 100 },
+  listEmpty: { flexGrow: 1 },
+  item: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#f1f5f9', marginBottom: 2 },
-  listContent: { paddingTop: 8, paddingBottom: 12 },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    backgroundColor: '#0f172a',
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    borderRadius: 22,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    color: '#f1f5f9',
-    fontSize: 15,
-    maxHeight: 120,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#1e293b',
   },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  itemPressed: { backgroundColor: '#1e293b' },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#6366f1',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
-  sendBtnDisabled: { backgroundColor: '#334155' },
-  sendIcon: { color: '#fff', fontSize: 20, fontWeight: '700' },
-  emptyState: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#475569', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#334155', textAlign: 'center', lineHeight: 20 },
+  avatarText: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  content: { flex: 1, gap: 4 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  name: { fontSize: 16, fontWeight: '600', color: '#f1f5f9' },
+  time: { fontSize: 12, color: '#64748b' },
+  preview: { fontSize: 14, color: '#94a3b8' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 24 },
+  emptyTitle: { color: '#cbd5e1', fontSize: 18, fontWeight: '700' },
+  emptySub: { color: '#64748b', fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  primaryBtn: { backgroundColor: '#6366f1', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  primaryBtnText: { color: '#fff', fontWeight: '700' },
+  secondaryBtn: {
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#334155',
+  },
+  secondaryBtnText: { color: '#cbd5e1', fontWeight: '600' },
 });
