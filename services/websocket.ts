@@ -1,5 +1,5 @@
 /**
- * AgentConnection — manages a single WebSocket connection to a PicoClaw
+ * AgentConnection — manages a single WebSocket connection to a ClawMobile
  * (or compatible) agent server.
  *
  * Usage:

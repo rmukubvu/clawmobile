@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PicoClaw",
-    "slug": "picoclaw-app",
+    "name": "ClawMobile",
+    "slug": "clawmobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,12 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.picoclaw.app",
+      "bundleIdentifier": "com.clawmobile.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "PicoClaw uses your location to give context-aware suggestions.",
-        "NSCalendarsUsageDescription": "PicoClaw reads your calendar to help you stay on top of your schedule.",
-        "NSMicrophoneUsageDescription": "PicoClaw uses your microphone for voice messages.",
-        "NSCameraUsageDescription": "PicoClaw uses your camera to share images with your agent."
+        "NSLocationWhenInUseUsageDescription": "ClawMobile uses your location to give context-aware suggestions.",
+        "NSCalendarsUsageDescription": "ClawMobile reads your calendar to help you stay on top of your schedule.",
+        "NSMicrophoneUsageDescription": "ClawMobile uses your microphone for voice messages.",
+        "NSCameraUsageDescription": "ClawMobile uses your camera to share images with your agent."
       }
     },
     "android": {
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "com.picoclaw.app",
+      "package": "com.clawmobile.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -41,7 +41,7 @@
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "picoclaw",
+    "scheme": "clawmobile",
     "plugins": [
       "expo-router",
       "expo-location",

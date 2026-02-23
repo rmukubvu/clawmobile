@@ -63,7 +63,7 @@ export default function AgentsScreen() {
         {showForm && (
           <View style={styles.form}>
             <Text style={styles.formTitle}>New Agent Connection</Text>
-            <Field label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="My PicoClaw" />
+            <Field label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="My ClawMobile" />
             <Field label="WebSocket URL" value={form.url} onChange={(v) => setForm((f) => ({ ...f, url: v }))} placeholder="ws://host:18792/ws" autoCapitalize="none" />
             <Field label="Client ID" value={form.clientId} onChange={(v) => setForm((f) => ({ ...f, clientId: v }))} placeholder="alice" autoCapitalize="none" />
             <Field label="Token (optional)" value={form.token} onChange={(v) => setForm((f) => ({ ...f, token: v }))} placeholder="" autoCapitalize="none" secureTextEntry />
@@ -74,7 +74,7 @@ export default function AgentsScreen() {
         )}
 
         {agents.length === 0 && !showForm && (
-          <Text style={styles.empty}>No agents configured yet. Tap "+ Add" to connect to a PicoClaw instance.</Text>
+          <Text style={styles.empty}>No agents configured yet. Tap "+ Add" to connect to a ClawMobile instance.</Text>
         )}
 
         {agents.map((agent) => (

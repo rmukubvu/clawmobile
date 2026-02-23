@@ -5,7 +5,7 @@ import { useChatStore } from '@/store/chat';
 /**
  * Tasks screen — shows agent messages that look like task results or
  * notifications (non-conversational output). In future iterations this
- * will integrate with spawn/subagent results from PicoClaw.
+ * will integrate with spawn/subagent results from ClawMobile.
  */
 export default function TasksScreen() {
   const messages = useChatStore((s) => s.messages);

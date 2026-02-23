@@ -125,7 +125,7 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>{activeAgent?.name ?? 'PicoClaw'}</Text>
+          <Text style={styles.headerTitle}>{activeAgent?.name ?? 'ClawMobile'}</Text>
           <ConnectionDot connected={connected} connecting={connecting} />
         </View>
       </View>
@@ -150,7 +150,7 @@ export default function ChatScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No agent connected</Text>
             <Text style={styles.emptyText}>
-              Go to the Agents tab to add your PicoClaw connection.
+              Go to the Agents tab to add your ClawMobile connection.
             </Text>
           </View>
         )}

@@ -24,7 +24,7 @@ interface SettingsState {
   hydrate: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'picoclaw:settings';
+const STORAGE_KEY = 'clawmobile:settings';
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   agents: [],

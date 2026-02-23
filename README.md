@@ -1,4 +1,4 @@
-# ClawMobile Mobile App
+# ClawMobile App
 
 Native mobile interface for AI agents using the Universal AI Agent WebSocket Protocol (UAAWP).
 
@@ -49,7 +49,7 @@ ClawMobile App is a React Native mobile application that provides a universal in
 
 ```bash
 # Clone repository
-git clone https://github.com/sipeed/clawmobile.git
+git clone https://github.com/rmukubvu/clawmobile.git
 cd clawmobile/clawmobile-app
 
 # Install dependencies
@@ -423,9 +423,9 @@ Contributions welcome! Please:
 
 ## Support
 
-- **Issues:** https://github.com/sipeed/clawmobile/issues
+- **Issues:** https://github.com/rmukubvu/clawmobile/issues
 - **Discord:** https://discord.gg/V4sAZ9XWpN
-- **Discussions:** https://github.com/sipeed/clawmobile/discussions
+- **Discussions:** https://github.com/rmukubvu/clawmobile/discussions
 - **Protocol Spec:** [PROTOCOL.md](PROTOCOL.md)
 
 ## License

@@ -30,14 +30,14 @@ export default function SettingsScreen() {
 
         <SectionTitle>About</SectionTitle>
         <View style={styles.card}>
-          <Row label="App" value="PicoClaw Mobile" />
+          <Row label="App" value="ClawMobile" />
           <Row label="Protocol" value="WebSocket / JSON" />
           <Row label="Connection" value={connected ? 'Active' : 'Offline'} valueColor={connected ? '#22c55e' : '#ef4444'} />
         </View>
 
         <Text style={styles.footer}>
-          PicoClaw — Ultra-lightweight personal AI agent{'\n'}
-          github.com/sipeed/picoclaw
+          ClawMobile — Ultra-lightweight personal AI agent{'\n'}
+          github.com/rmukubvu/clawmobile
         </Text>
       </ScrollView>
     </SafeAreaView>
