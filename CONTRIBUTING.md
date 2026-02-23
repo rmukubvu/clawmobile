@@ -10,7 +10,7 @@
 ## Setup
 
 ```bash
-cd /Users/robson/clawmobile/clawmobile-app
+cd /path/to/clawmobile/clawmobile-app
 npm install
 ```
 
