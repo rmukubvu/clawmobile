@@ -1,10 +1,10 @@
-# PicoClaw Mobile App
+# ClawMobile Mobile App
 
 Native mobile interface for AI agents using the Universal AI Agent WebSocket Protocol (UAAWP).
 
 ## Overview
 
-PicoClaw App is a React Native mobile application that provides a universal interface for interacting with AI agents. Unlike platform-specific bots (Telegram, Discord, Slack), this app offers:
+ClawMobile App is a React Native mobile application that provides a universal interface for interacting with AI agents. Unlike platform-specific bots (Telegram, Discord, Slack), this app offers:
 
 - **Direct connection** to your AI agent (no third-party servers)
 - **Rich context** integration (location, calendar, camera, microphone)
@@ -31,7 +31,7 @@ PicoClaw App is a React Native mobile application that provides a universal inte
 - ✅ Timezone detection
 
 ### Supported Agent Frameworks
-- ✅ **PicoClaw** (Go) - Native support
+- ✅ **ClawMobile** (Go) - Native support
 - ✅ **Nanobot** (Python) - Via adapter
 - ✅ **OpenClaw/Moltbot** (TypeScript) - Via adapter
 - ✅ **Custom agents** - Implement UAAWP protocol
@@ -49,8 +49,8 @@ PicoClaw App is a React Native mobile application that provides a universal inte
 
 ```bash
 # Clone repository
-git clone https://github.com/sipeed/picoclaw.git
-cd picoclaw/picoclaw-app
+git clone https://github.com/sipeed/clawmobile.git
+cd clawmobile/clawmobile-app
 
 # Install dependencies
 npm install
@@ -88,9 +88,9 @@ npm run web
 
 Choose your agent framework and start the WebSocket server:
 
-**PicoClaw (Go):**
+**ClawMobile (Go):**
 ```bash
-# Edit ~/.picoclaw/config.json
+# Edit ~/.clawmobile/config.json
 {
   "channels": {
     "websocket": {
@@ -103,7 +103,7 @@ Choose your agent framework and start the WebSocket server:
 }
 
 # Start gateway
-picoclaw gateway
+clawmobile gateway
 ```
 
 **Nanobot (Python):**
@@ -123,7 +123,7 @@ WS_TOKEN=your_secret_token node websocket-adapter.js
 
 ### 2. Add Agent Profile in App
 
-1. Open PicoClaw app
+1. Open ClawMobile app
 2. Go to "Agents" tab
 3. Tap "Add Agent"
 4. Fill in details:
@@ -144,7 +144,7 @@ WS_TOKEN=your_secret_token node websocket-adapter.js
 ## Project Structure
 
 ```
-picoclaw-app/
+clawmobile-app/
 ├── app/                    # Expo Router screens
 │   ├── (tabs)/            # Tab navigation
 │   │   ├── index.tsx      # Chat screen
@@ -423,9 +423,9 @@ Contributions welcome! Please:
 
 ## Support
 
-- **Issues:** https://github.com/sipeed/picoclaw/issues
+- **Issues:** https://github.com/sipeed/clawmobile/issues
 - **Discord:** https://discord.gg/V4sAZ9XWpN
-- **Discussions:** https://github.com/sipeed/picoclaw/discussions
+- **Discussions:** https://github.com/sipeed/clawmobile/discussions
 - **Protocol Spec:** [PROTOCOL.md](PROTOCOL.md)
 
 ## License
@@ -434,7 +434,7 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Built with ❤️ by the PicoClaw Community**
+**Built with ❤️ by the ClawMobile Community**
 
 ## Open Source
 
@@ -456,7 +456,7 @@ Please read these files before contributing:
 You can test this app with a local Cognis gateway without WhatsApp integration.
 
 1. Start Cognis gateway (default `8787`).
-2. Open PicoClaw app and add an agent profile:
+2. Open ClawMobile app and add an agent profile:
 - URL: `ws://127.0.0.1:8787/ws`
 - Client ID: `dev-mobile` (or any stable id)
 - Token: optional (set only if required by your gateway)
@@ -468,7 +468,7 @@ If your app runs on a physical phone, use your machine's LAN IP instead of `127.
 
 - Do not commit secrets (API keys, tokens, signing keys, production endpoints).
 - Agent profiles and chat settings are stored locally on-device via AsyncStorage.
-- Report vulnerabilities privately via `security@picoclaw.dev`.
+- Report vulnerabilities privately via `security@clawmobile.dev`.
 
 ## Quick OSS Maintainer Checklist
 

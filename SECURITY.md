@@ -8,7 +8,7 @@ Security fixes are applied to the latest `main` branch.
 
 Do not open public issues for suspected security vulnerabilities.
 
-Report vulnerabilities privately to: security@picoclaw.dev
+Report vulnerabilities privately to: security@clawmobile.dev
 
 Include:
 

@@ -102,7 +102,7 @@ jest.mock('expo-constants', () => ({
   default: {
     expoConfig: {
       version: '1.0.0',
-      name: 'PicoClaw',
+      name: 'ClawMobile',
     },
     platform: {
       ios: {

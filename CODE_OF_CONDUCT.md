@@ -50,7 +50,7 @@ an individual is officially representing the project in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainers at security@picoclaw.dev.
+reported to the maintainers at security@clawmobile.dev.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

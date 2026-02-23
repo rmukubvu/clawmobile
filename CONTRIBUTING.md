@@ -1,4 +1,4 @@
-# Contributing To PicoClaw App
+# Contributing To ClawMobile App
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@
 ## Setup
 
 ```bash
-cd /Users/robson/picoclaw/picoclaw-app
+cd /Users/robson/clawmobile/clawmobile-app
 npm install
 ```
 
