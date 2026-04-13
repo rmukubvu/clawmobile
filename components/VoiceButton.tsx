@@ -6,8 +6,17 @@ import {
     ActivityIndicator,
     Animated,
 } from 'react-native';
-import { Audio } from 'expo-av';
-import { Mic } from 'lucide-react-native';
+import { Mic, MicOff } from 'lucide-react-native';
+
+// expo-av is not available in Expo Go ≥ SDK 53 — load lazily so the module
+// doesn't crash on import when the native module is absent.
+let Audio: typeof import('expo-av').Audio | null = null;
+try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Audio = require('expo-av').Audio;
+} catch {
+    // Running in Expo Go without native audio support — voice recording disabled.
+}
 
 interface VoiceButtonProps {
     /** Called with the transcribed text when recording is done */
@@ -39,7 +48,7 @@ function baseUrl(url: string): string {
  */
 export function VoiceButton({ onTranscript, serverUrl }: VoiceButtonProps) {
     const [state, setState] = useState<State>('idle');
-    const recordingRef = useRef<Audio.Recording | null>(null);
+    const recordingRef = useRef<any>(null);
     const scale = useRef(new Animated.Value(1)).current;
 
     const animatePress = (pressed: boolean) => {
@@ -51,6 +60,7 @@ export function VoiceButton({ onTranscript, serverUrl }: VoiceButtonProps) {
     };
 
     const startRecording = useCallback(async () => {
+        if (!Audio) return; // expo-av unavailable (Expo Go)
         try {
             const { granted } = await Audio.requestPermissionsAsync();
             if (!granted) return;
@@ -108,6 +118,15 @@ export function VoiceButton({ onTranscript, serverUrl }: VoiceButtonProps) {
         transcribing: '#f59e0b',
         error: '#ef4444',
     }[state];
+
+    // When expo-av is unavailable (Expo Go), render a disabled mic button
+    if (!Audio) {
+        return (
+            <View style={[styles.button, { backgroundColor: '#9ca3af' }]}>
+                <MicOff color="#fff" size={20} strokeWidth={2} />
+            </View>
+        );
+    }
 
     return (
         <Pressable
